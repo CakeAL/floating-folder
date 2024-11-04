@@ -12,3 +12,6 @@ dev:
 
 clippy: 
     cd src-tauri && cargo clippy
+
+clean: 
+    cd src-tauri && cargo clean

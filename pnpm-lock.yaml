@@ -9,29 +9,32 @@ importers:
   .:
     dependencies:
       '@tauri-apps/api':
-        specifier: ^2
+        specifier: ^2.0.3
         version: 2.0.3
+      '@tauri-apps/plugin-positioner':
+        specifier: ~2
+        version: 2.0.1
       '@tauri-apps/plugin-shell':
-        specifier: ^2
+        specifier: ^2.0.1
         version: 2.0.1
       vue:
-        specifier: ^3.3.4
+        specifier: ^3.5.12
         version: 3.5.12(typescript@5.6.3)
     devDependencies:
       '@tauri-apps/cli':
-        specifier: ^2
+        specifier: ^2.0.4
         version: 2.0.4
       '@vitejs/plugin-vue':
-        specifier: ^5.0.5
+        specifier: ^5.1.4
         version: 5.1.4(vite@5.4.10)(vue@3.5.12(typescript@5.6.3))
       typescript:
-        specifier: ^5.2.2
+        specifier: ^5.6.3
         version: 5.6.3
       vite:
-        specifier: ^5.3.1
+        specifier: ^5.4.10
         version: 5.4.10
       vue-tsc:
-        specifier: ^2.0.22
+        specifier: ^2.1.10
         version: 2.1.10(typescript@5.6.3)
 
 packages:
@@ -364,6 +367,9 @@ packages:
     resolution: {integrity: sha512-Hl9eFXz+O366+6su9PfaSzu2EJdFe1p8K8ghkWmi40dz8VmSE7vsMTaOStD0I71ckSOkh2ICDX7FQTBgjlpjWw==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tauri-apps/plugin-positioner@2.0.1':
+    resolution: {integrity: sha512-qZY3qiFnt4XU7pYiew17pso9Wg+lgfr6UBva4uvAuWaeW+6KaZCrGJKyr6GLHDar/Lc5KQV392jKMswfrwOplw==}
 
   '@tauri-apps/plugin-shell@2.0.1':
     resolution: {integrity: sha512-akU1b77sw3qHiynrK0s930y8zKmcdrSD60htjH+mFZqv5WaakZA/XxHR3/sF1nNv9Mgmt/Shls37HwnOr00aSw==}
@@ -739,6 +745,10 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.0.4
       '@tauri-apps/cli-win32-ia32-msvc': 2.0.4
       '@tauri-apps/cli-win32-x64-msvc': 2.0.4
+
+  '@tauri-apps/plugin-positioner@2.0.1':
+    dependencies:
+      '@tauri-apps/api': 2.0.3
 
   '@tauri-apps/plugin-shell@2.0.1':
     dependencies:
