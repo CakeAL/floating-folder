@@ -1,0 +1,6 @@
+html,
+body {
+  background: transparent;
+  overscroll-behavior: none;
+  margin: 0;
+}

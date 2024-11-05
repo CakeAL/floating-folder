@@ -9,8 +9,10 @@ use std::collections::HashSet;
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone)]
+
+#[derive(Default, Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum FolderIcon {
     #[default]
     System,
@@ -20,7 +22,7 @@ pub enum FolderIcon {
 }
 
 /// 单个窗口的设置
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct FolderSettings {
     /// The order of contents.
     /// store filename.
@@ -32,14 +34,16 @@ pub struct FolderSettings {
     pub center_pos: (u32, u32),
 }
 
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct FloatingFolder {
+    pub label: String,
     pub content_path: PathBuf,
     pub settings: FolderSettings,
 }
 
 impl FloatingFolder {
     pub fn copy_in(&mut self, src: impl AsRef<Path>) -> std::io::Result<()> {
-        let to = self.content_path.join(src.as_ref().file_name()
+        let to: PathBuf = self.content_path.join(src.as_ref().file_name()
             .ok_or(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid src path"))?);
         std::fs::copy(src, to)
             .map(|_| ())

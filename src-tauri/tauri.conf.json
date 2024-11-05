@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "floating-folder",
   "version": "0.1.0",
-  "identifier": "com.floating-folder.app",
+  "identifier": "com.floating-folder",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",

@@ -1,12 +1,12 @@
 use commands::new_folder_window;
+use state::AppState;
 use tauri::{
-    menu::{Menu, MenuEvent, MenuItem},
-    tray::TrayIconBuilder,
-    App, AppHandle, Wry,
+    menu::{Menu, MenuEvent, MenuItem}, tray::TrayIconBuilder, App, AppHandle, Manager, Wry
 };
 
 mod commands;
 mod ff;
+mod state;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,6 +16,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![])
         .setup(|app| {
+            app.manage(AppState::init(app.handle())?);
             // 系统托盘
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
@@ -23,6 +24,8 @@ pub fn run() {
                 .on_menu_event(handle_menu_event)
                 .build(app)?;
             Ok(())
+            // 初始化已存储的文件夹
+            // ..
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -40,7 +43,7 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
             app.exit(0);
         }
         "new_folder" => {
-            let _ = new_folder_window(app);
+            let _ = new_folder_window(app, app.state());
         }
         _ => {}
     }
