@@ -1,6 +1,7 @@
 use tauri::{utils::config::WindowConfig, AppHandle, State, WebviewWindowBuilder};
 
 use crate::{ff::FloatingFolder, state::AppState};
+use crate::ff::FolderSettings;
 
 #[tauri::command]
 pub fn new_folder_window(app: &AppHandle, app_state: State<AppState>) -> Result<(), String> {
@@ -27,7 +28,10 @@ pub fn new_folder_window(app: &AppHandle, app_state: State<AppState>) -> Result<
     .build()
     .map_err(|e| e.to_string())?;
     app_state.folders.write().unwrap().push(FloatingFolder {
-        label,
+        settings: FolderSettings {
+            label,
+            ..Default::default()
+        },
         ..Default::default()
     });
     Ok(())

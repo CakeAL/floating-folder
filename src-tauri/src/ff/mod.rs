@@ -1,14 +1,16 @@
-//! |--ff.exe                            The app file
-//! |--ffs                               The float folders
-//! |  |--folder1                        Example float folder instance
-//! |  |  |--content                     The content folder to store the file in this folder
+//! |--ff.exe                            The app file.
+//! |--ffs                               The float folders.
+//! |  |--folder1                        Example float folder instance.
+//! |  |  |--content                     The content folder to store the file in this folder.
 //! |  |  |  |-- folder_contents...
-//! |  |  |--settings.toml               The settings file
+//! |  |  |--settings.toml               The settings file.
 
 use std::collections::HashSet;
 use std::ffi::{OsStr, OsString};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-
+use rayon::iter::ParallelBridge;
+use rayon::iter::ParallelIterator;
 use serde::{Deserialize, Serialize};
 
 
@@ -22,8 +24,9 @@ pub enum FolderIcon {
 }
 
 /// 单个窗口的设置
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FolderSettings {
+    pub label: String,
     /// The order of contents.
     /// store filename.
     pub contents: Vec<OsString>,
@@ -34,14 +37,46 @@ pub struct FolderSettings {
     pub center_pos: (u32, u32),
 }
 
+impl Default for FolderSettings {
+    fn default() -> Self {
+        Self {
+            label: "文件夹".to_string(),
+            contents: vec![],
+            icon_scale: 1.0,
+            content_scale: 1.0,
+            icon: Default::default(),
+            open_by_click: false,
+            center_pos: (200, 200),
+        }
+    }
+}
+
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct FloatingFolder {
-    pub label: String,
     pub content_path: PathBuf,
     pub settings: FolderSettings,
 }
 
 impl FloatingFolder {
+    pub fn parse(path: impl AsRef<Path>) -> std::io::Result<Self> {
+        let content_path = path.as_ref().join("content");
+        if !content_path.exists() {
+            std::fs::create_dir(&content_path)?;
+        }
+        let settings_path = content_path.join("settings.json");
+
+        let settings = if settings_path.exists() {
+            serde_json::from_reader(std::fs::File::open(settings_path)?)?
+        } else {
+            Default::default()
+        };
+
+        Ok(FloatingFolder {
+            content_path,
+            settings,
+        })
+    }
+
     pub fn copy_in(&mut self, src: impl AsRef<Path>) -> std::io::Result<()> {
         let to: PathBuf = self.content_path.join(src.as_ref().file_name()
             .ok_or(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid src path"))?);
@@ -77,7 +112,67 @@ impl FloatingFolder {
             let file_path = self.content_path.join(file);
             Ok(file_path)
         } else {
-            Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid Index"))
+            Err(std::io::Error::new(ErrorKind::InvalidInput, "Invalid Index"))
         }
     }
+
+    pub fn get_ffs_path() -> std::io::Result<PathBuf> {
+        Ok(std::env::current_dir()?.join("ffs"))
+    }
+
+    pub fn get_folders() -> std::io::Result<Vec<FloatingFolder>> {
+
+        //|--ffs                               The float folders.
+        //|  |--folder1                        Example float folder instance.
+        //|  |  |--content                     The content folder to store the file in this folder.
+        //|  |  |  |-- folder_contents...
+        //|  |  |--settings.toml               The settings file.
+
+        let result = Self::get_ffs_path()?.read_dir()?
+            .par_bridge()
+            .map(|x| {
+                if let Ok(entry) = x {
+                    let entry_path = entry.path();
+                    if !entry_path.join("content").exists() {
+                        return None;
+                    }
+                    let settings_path = entry_path.join("settings.json");
+                    let settings = match std::fs::File::open(settings_path)
+                        .map(|x| serde_json::from_reader::<_, FolderSettings>(x)) {
+                        Ok(o) => {
+                            match o {
+                                Ok(s) => s,
+                                Err(e) => {
+                                    log::warn!("Dir {:?} contains invalid settings file. {e:?}", &entry_path);
+                                    return None;
+                                }
+                            }
+                        }
+                        Err(e) if e.kind() == ErrorKind::NotFound => Default::default(),
+                        Err(e) => {
+                            log::warn!("Dir {:?} contains invalid settings file. {e:?}", &entry_path);
+                            return None;
+                        }
+                    };
+
+
+                    let mut ff = FloatingFolder {
+                        content_path: entry.path().join("content"),
+                        settings,
+                    };
+                    if let Err(e) = ff.check_contents() {
+                        log::warn!("Check {:?} content with error. {e:?}", &entry_path);
+                    }
+                    Some(ff)
+                } else {
+                    log::warn!("Cannot read dir! {x:?}");
+                    None
+                }
+            })
+            .filter(|x| x.is_some())
+            .map(Option::unwrap)
+            .collect();
+        Ok(result)
+    }
 }
+
