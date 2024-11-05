@@ -5,13 +5,13 @@
 //! |  |  |  |-- folder_contents...
 //! |  |  |--settings.toml               The settings file.
 
+use rayon::iter::ParallelBridge;
+use rayon::iter::ParallelIterator;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::ffi::{OsStr, OsString};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-use rayon::iter::ParallelBridge;
-use rayon::iter::ParallelIterator;
-use serde::{Deserialize, Serialize};
 
 
 #[derive(Default, Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone, Serialize, Deserialize)]
@@ -34,7 +34,7 @@ pub struct FolderSettings {
     pub content_scale: f32,
     pub icon: FolderIcon,
     pub open_by_click: bool,
-    pub center_pos: (u32, u32),
+    pub window_pos: (i32, i32),
 }
 
 impl Default for FolderSettings {
@@ -46,7 +46,7 @@ impl Default for FolderSettings {
             content_scale: 1.0,
             icon: Default::default(),
             open_by_click: false,
-            center_pos: (200, 200),
+            window_pos: (200, 200),
         }
     }
 }
@@ -79,7 +79,7 @@ impl FloatingFolder {
 
     pub fn copy_in(&mut self, src: impl AsRef<Path>) -> std::io::Result<()> {
         let to: PathBuf = self.content_path.join(src.as_ref().file_name()
-            .ok_or(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid src path"))?);
+            .ok_or(std::io::Error::new(ErrorKind::InvalidInput, "Invalid src path"))?);
         std::fs::copy(src, to)
             .map(|_| ())
     }
@@ -120,7 +120,7 @@ impl FloatingFolder {
         Ok(std::env::current_dir()?.join("ffs"))
     }
 
-    pub fn get_folders() -> std::io::Result<Vec<FloatingFolder>> {
+    pub fn get_folders(ffs: impl AsRef<Path>) -> std::io::Result<Vec<FloatingFolder>> {
 
         //|--ffs                               The float folders.
         //|  |--folder1                        Example float folder instance.
@@ -128,7 +128,11 @@ impl FloatingFolder {
         //|  |  |  |-- folder_contents...
         //|  |  |--settings.toml               The settings file.
 
-        let result = Self::get_ffs_path()?.read_dir()?
+        if !ffs.as_ref().exists() {
+            std::fs::create_dir(ffs.as_ref())?;
+        }
+
+        let result = ffs.as_ref().read_dir()?
             .par_bridge()
             .map(|x| {
                 if let Ok(entry) = x {
@@ -173,6 +177,40 @@ impl FloatingFolder {
             .map(Option::unwrap)
             .collect();
         Ok(result)
+    }
+
+    pub fn create_folder(ffs: impl AsRef<Path>, name: &str) -> std::io::Result<FloatingFolder> {
+
+        //|--ffs                               The float folders.
+        //|  |--folder1                        Example float folder instance.
+        //|  |  |--content                     The content folder to store the file in this folder.
+        //|  |  |  |-- folder_contents...
+        //|  |  |--settings.toml               The settings file.
+
+        if !ffs.as_ref().exists() {
+            std::fs::create_dir(ffs.as_ref())?;
+        }
+
+        let mut idx = None;
+        loop {
+            let dir_path = idx.map(|x| ffs.as_ref().join(format!("{name} ({x})")))
+                .unwrap_or(ffs.as_ref().join(name));
+            if dir_path.exists() {
+                idx = Some(idx.unwrap_or(0) + 1);
+                continue;
+            }
+            std::fs::create_dir_all(dir_path.join("content"))?;
+            let settings = FolderSettings {
+                label: name.to_string(),
+                ..Default::default()
+            };
+            serde_json::to_writer(std::fs::File::create_new(dir_path.join("settings.json"))?, &settings)?;
+            let ff = FloatingFolder {
+                content_path: dir_path.join("content"),
+                settings,
+            };
+            break Ok(ff);
+        }
     }
 }
 

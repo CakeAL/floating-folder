@@ -5,27 +5,43 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
 use crate::ff::FloatingFolder;
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct AppSettings {
+    pub folder_root: Option<PathBuf>
+}
 
-#[derive(Debug, Serialize, Deserialize)]
+impl AppSettings {
+    pub fn get_ffs_dir(&self, app: &AppHandle) -> Result<PathBuf> {
+        Ok(self.folder_root.clone().unwrap_or(app.path().app_data_dir()?.join("ffs")))
+    }
+}
+#[derive(Debug)]
 pub struct AppState {
+    pub settings: RwLock<AppSettings>,
     pub folders: RwLock<Vec<FloatingFolder>>,
 }
 
 impl AppState {
     pub fn init(app: &AppHandle) -> Result<Self> {
         let path = get_data_path(app)?;
-        if path.exists() {
+        let settings = if path.exists() {
             let file = OpenOptions::new().read(true).open(path)?;
-            let appstate: Self = serde_json::from_reader(file)?;
-            Ok(appstate)
+            serde_json::from_reader(file)?
         } else {
             let file = OpenOptions::new().write(true).create(true).open(path)?;
-            let new_appstate = Self {
-                folders: RwLock::new(Vec::new()),
-            };
-            serde_json::to_writer(&file, &new_appstate)?;
-            Ok(new_appstate)
-        }
+            let settings = AppSettings::default();
+            serde_json::to_writer(&file, &settings)?;
+            settings
+        };
+
+        let folders = FloatingFolder::get_folders(settings.get_ffs_dir(app)?)?;
+
+        let settings = RwLock::new(settings);
+        let folders = RwLock::new(folders);
+        Ok(Self {
+            settings,
+            folders
+        })
     }
 }
 
