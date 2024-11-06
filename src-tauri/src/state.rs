@@ -4,15 +4,18 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-use crate::ff::FloatingFolder;
+use crate::{ff::FloatingFolder, folder_window::new_folder_window};
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct AppSettings {
-    pub folder_root: Option<PathBuf>
+    pub folder_root: Option<PathBuf>,
 }
 
 impl AppSettings {
     pub fn get_ffs_dir(&self, app: &AppHandle) -> Result<PathBuf> {
-        Ok(self.folder_root.clone().unwrap_or(app.path().app_data_dir()?.join("ffs")))
+        Ok(self
+            .folder_root
+            .clone()
+            .unwrap_or(app.path().app_data_dir()?.join("ffs")))
     }
 }
 #[derive(Debug)]
@@ -38,10 +41,16 @@ impl AppState {
 
         let settings = RwLock::new(settings);
         let folders = RwLock::new(folders);
-        Ok(Self {
-            settings,
-            folders
-        })
+        Ok(Self { settings, folders })
+    }
+
+    pub fn create_saved_floating_folders(&self, app: &AppHandle) {
+        let floating_folders = &*self.folders.read().unwrap();
+        floating_folders.iter().for_each(|ff| {
+            if let Err(e) = new_folder_window(app, &ff.settings) {
+                log::error!("Cannot create new floating folders: {e:?}");
+            };
+        });
     }
 }
 

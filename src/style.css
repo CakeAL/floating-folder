@@ -1,5 +1,6 @@
 html,
-body {
+body,
+#app {
   background: transparent;
   overscroll-behavior: none;
   margin: 0;

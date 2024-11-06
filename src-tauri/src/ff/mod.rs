@@ -40,7 +40,7 @@ pub struct FolderSettings {
 impl Default for FolderSettings {
     fn default() -> Self {
         Self {
-            label: "文件夹".to_string(),
+            label: String::new(),
             contents: vec![],
             icon_scale: 1.0,
             content_scale: 1.0,

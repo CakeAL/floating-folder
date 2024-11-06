@@ -1,26 +1,34 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
-const isExpended = ref(false);
+// const isExpended = ref(false);
 
-const openFolder = () => {
-  isExpended.value = true;
-};
+// const openFolder = () => {
+//   isExpended.value = true;
+// };
 
-const closeFolder = () => {
-  isExpended.value = false;
-};
+// const closeFolder = () => {
+//   isExpended.value = false;
+// };
+
+const label = ref<any>("");
+
+onMounted(() => {
+  if ((window as any).label) {
+    label.value = (window as any).label;
+  }
+});
+
 </script>
 
 <template>
   <div class="container">
-    <div
-      class="folder"
-      :class="{ expanded: isExpended }"
-      data-tauri-drag-region
-      @click="openFolder"
-      @mouseleave="closeFolder"
-    ></div>
+    <!-- :class="{ expanded: isExpended }" -->
+    <div class="folder" data-tauri-drag-region>
+      Hi, I'm {{ label }}
+    </div>
+    <!--       @click="openFolder"
+      @mouseleave="closeFolder" -->
   </div>
 </template>
 
@@ -29,27 +37,28 @@ const closeFolder = () => {
   width: 192px;
   height: 192px;
   position: relative;
+  pointer-events: none;
 }
 
 .folder {
-  width: 64px;
-  height: 64px;
-  background-color: rgba(200, 200, 200, 0.3);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 16px;
-  transition: all 0.3s ease-in-out;
-  cursor: pointer;
-}
-
-.folder.expanded {
   width: 192px;
   height: 192px;
-  transform: translate(0, 0);
+  background-color: rgba(200, 200, 200, 0.3);
+  position: absolute;
+  /* top: 64px;
+  left: 64px; */
+  border-radius: 16px;
+  /* transition: all 0.3s ease-in-out; */
+  cursor: pointer;
+  pointer-events: all;
+}
+
+/* .folder:hover {
+  width: 192px;
+  height: 192px;
   top: 0px;
   left: 0px;
   border-radius: 16px;
-}
+  pointer-events: all;
+} */
 </style>
