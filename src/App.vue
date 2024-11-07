@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { onMounted, ref } from "vue";
 
 // const isExpended = ref(false);
@@ -19,14 +21,28 @@ onMounted(() => {
   }
 });
 
+// move
+const appWindow = getCurrentWindow();
+
+let moveTimeout: number | undefined;
+
+appWindow.listen("tauri://move", () => {
+  clearTimeout(moveTimeout);
+  moveTimeout = setTimeout(async () => {
+    let pos = await appWindow.outerPosition();
+    await invoke("moved_folder", {
+      label: label.value,
+      x: pos.x,
+      y: pos.y,
+    });
+  }, 100);
+});
 </script>
 
 <template>
   <div class="container">
     <!-- :class="{ expanded: isExpended }" -->
-    <div class="folder" data-tauri-drag-region>
-      Hi, I'm {{ label }}
-    </div>
+    <div class="folder" data-tauri-drag-region>Hi, I'm {{ label }}</div>
     <!--       @click="openFolder"
       @mouseleave="closeFolder" -->
   </div>

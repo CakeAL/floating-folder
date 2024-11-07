@@ -13,6 +13,7 @@ use std::ffi::{OsStr, OsString};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
+use crate::state::FolderMap;
 
 #[derive(Default, Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum FolderIcon {
@@ -27,6 +28,7 @@ pub enum FolderIcon {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FolderSettings {
     pub label: String,
+    pub name: String,
     /// The order of contents.
     /// store filename.
     pub contents: Vec<OsString>,
@@ -41,6 +43,7 @@ impl Default for FolderSettings {
     fn default() -> Self {
         Self {
             label: String::new(),
+            name: "文件夹".into(),
             contents: vec![],
             icon_scale: 1.0,
             content_scale: 1.0,
@@ -78,10 +81,13 @@ impl FloatingFolder {
     }
 
     pub fn copy_in(&mut self, src: impl AsRef<Path>) -> std::io::Result<()> {
-        let to: PathBuf = self.content_path.join(src.as_ref().file_name()
-            .ok_or(std::io::Error::new(ErrorKind::InvalidInput, "Invalid src path"))?);
-        std::fs::copy(src, to)
-            .map(|_| ())
+        let to: PathBuf =
+            self.content_path
+                .join(src.as_ref().file_name().ok_or(std::io::Error::new(
+                    ErrorKind::InvalidInput,
+                    "Invalid src path",
+                ))?);
+        std::fs::copy(src, to).map(|_| ())
     }
 
     pub fn get_dir_name(&self) -> &OsStr {
@@ -102,7 +108,9 @@ impl FloatingFolder {
     }
 
     pub fn get_contents(&self) -> Vec<PathBuf> {
-        self.settings.contents.iter()
+        self.settings
+            .contents
+            .iter()
             .map(|x| self.content_path.join(x))
             .collect()
     }
@@ -112,7 +120,10 @@ impl FloatingFolder {
             let file_path = self.content_path.join(file);
             Ok(file_path)
         } else {
-            Err(std::io::Error::new(ErrorKind::InvalidInput, "Invalid Index"))
+            Err(std::io::Error::new(
+                ErrorKind::InvalidInput,
+                "Invalid Index",
+            ))
         }
     }
 
@@ -120,8 +131,7 @@ impl FloatingFolder {
         Ok(std::env::current_dir()?.join("ffs"))
     }
 
-    pub fn get_folders(ffs: impl AsRef<Path>) -> std::io::Result<Vec<FloatingFolder>> {
-
+    pub fn get_folders(ffs: impl AsRef<Path>) -> std::io::Result<FolderMap> {
         //|--ffs                               The float folders.
         //|  |--folder1                        Example float folder instance.
         //|  |  |--content                     The content folder to store the file in this folder.
@@ -132,7 +142,9 @@ impl FloatingFolder {
             std::fs::create_dir(ffs.as_ref())?;
         }
 
-        let result = ffs.as_ref().read_dir()?
+        let result = ffs
+            .as_ref()
+            .read_dir()?
             .par_bridge()
             .map(|x| {
                 if let Ok(entry) = x {
@@ -142,23 +154,27 @@ impl FloatingFolder {
                     }
                     let settings_path = entry_path.join("settings.json");
                     let settings = match std::fs::File::open(settings_path)
-                        .map(|x| serde_json::from_reader::<_, FolderSettings>(x)) {
-                        Ok(o) => {
-                            match o {
-                                Ok(s) => s,
-                                Err(e) => {
-                                    log::warn!("Dir {:?} contains invalid settings file. {e:?}", &entry_path);
-                                    return None;
-                                }
+                        .map(|x| serde_json::from_reader::<_, FolderSettings>(x))
+                    {
+                        Ok(o) => match o {
+                            Ok(s) => s,
+                            Err(e) => {
+                                log::warn!(
+                                    "Dir {:?} contains invalid settings file. {e:?}",
+                                    &entry_path
+                                );
+                                return None;
                             }
-                        }
+                        },
                         Err(e) if e.kind() == ErrorKind::NotFound => Default::default(),
                         Err(e) => {
-                            log::warn!("Dir {:?} contains invalid settings file. {e:?}", &entry_path);
+                            log::warn!(
+                                "Dir {:?} contains invalid settings file. {e:?}",
+                                &entry_path
+                            );
                             return None;
                         }
                     };
-
 
                     let mut ff = FloatingFolder {
                         content_path: entry.path().join("content"),
@@ -174,13 +190,15 @@ impl FloatingFolder {
                 }
             })
             .filter(|x| x.is_some())
-            .map(Option::unwrap)
+            .map(|folder| {
+                let folder = folder.unwrap();
+                (folder.settings.label.to_owned(), folder)
+            })
             .collect();
         Ok(result)
     }
 
-    pub fn create_folder(ffs: impl AsRef<Path>, name: &str) -> std::io::Result<FloatingFolder> {
-
+    pub fn create_folder(ffs: impl AsRef<Path>, label: &str) -> std::io::Result<FloatingFolder> {
         //|--ffs                               The float folders.
         //|  |--folder1                        Example float folder instance.
         //|  |  |--content                     The content folder to store the file in this folder.
@@ -193,18 +211,22 @@ impl FloatingFolder {
 
         let mut idx = None;
         loop {
-            let dir_path = idx.map(|x| ffs.as_ref().join(format!("{name} ({x})")))
-                .unwrap_or(ffs.as_ref().join(name));
+            let dir_path = idx
+                .map(|x| ffs.as_ref().join(format!("{label} ({x})")))
+                .unwrap_or(ffs.as_ref().join(label));
             if dir_path.exists() {
                 idx = Some(idx.unwrap_or(0) + 1);
                 continue;
             }
             std::fs::create_dir_all(dir_path.join("content"))?;
             let settings = FolderSettings {
-                label: name.to_string(),
+                label: label.to_string(),
                 ..Default::default()
             };
-            serde_json::to_writer(std::fs::File::create_new(dir_path.join("settings.json"))?, &settings)?;
+            serde_json::to_writer(
+                std::fs::File::create_new(dir_path.join("settings.json"))?,
+                &settings,
+            )?;
             let ff = FloatingFolder {
                 content_path: dir_path.join("content"),
                 settings,
@@ -213,4 +235,3 @@ impl FloatingFolder {
         }
     }
 }
-

@@ -1,4 +1,4 @@
-use std::{fs::OpenOptions, path::PathBuf, sync::RwLock};
+use std::{collections::HashMap, fs::OpenOptions, path::PathBuf, sync::RwLock};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -18,10 +18,12 @@ impl AppSettings {
             .unwrap_or(app.path().app_data_dir()?.join("ffs")))
     }
 }
+
+pub type FolderMap = HashMap<String, FloatingFolder>;
 #[derive(Debug)]
 pub struct AppState {
     pub settings: RwLock<AppSettings>,
-    pub folders: RwLock<Vec<FloatingFolder>>,
+    pub folders: RwLock<FolderMap>,
 }
 
 impl AppState {
@@ -47,7 +49,7 @@ impl AppState {
     pub fn create_saved_floating_folders(&self, app: &AppHandle) {
         let floating_folders = &*self.folders.read().unwrap();
         floating_folders.iter().for_each(|ff| {
-            if let Err(e) = new_folder_window(app, &ff.settings) {
+            if let Err(e) = new_folder_window(app, &ff.1.settings) {
                 log::error!("Cannot create new floating folders: {e:?}");
             };
         });

@@ -1,3 +1,4 @@
+use crate::command::*;
 use crate::ff::FloatingFolder;
 use folder_window::new_folder_window;
 use state::AppState;
@@ -6,7 +7,9 @@ use tauri::{
     tray::TrayIconBuilder,
     App, AppHandle, Manager, Wry,
 };
+use uuid::Uuid;
 
+mod command;
 mod ff;
 mod folder_window;
 mod state;
@@ -17,7 +20,7 @@ pub fn run() {
         .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![moved_folder])
         .setup(|app| {
             app.manage(AppState::init(app.handle())?);
             // 系统托盘
@@ -38,7 +41,7 @@ pub fn run() {
 }
 
 fn menu(app: &mut App) -> tauri::Result<Menu<Wry>> {
-    let new_folder = MenuItem::with_id(app, "new_folder", "新建文件夹", true, None::<&str>)?;
+    let new_folder = MenuItem::with_id(app, "new_folder", "新建浮动文件夹", true, None::<&str>)?;
     let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
     Menu::with_items(app, &[&new_folder, &quit_i])
 }
@@ -55,7 +58,7 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
                 log::error!("Cannot get ffs dir: {e:?}");
                 panic!("😅😅");
             });
-            let label = format!("folder-{}", app_state.folders.read().unwrap().len());
+            let label = Uuid::new_v4().to_string();
             let ff = FloatingFolder::create_folder(ffs_dir, &label).unwrap_or_else(|e| {
                 log::error!("Cannot create folder: {e:?}");
                 panic!("😅😅");
@@ -63,8 +66,7 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
             new_folder_window(app, &ff.settings).unwrap_or_else(|e| {
                 log::error!("Cannot create floating folder window: {e:?}");
             });
-            // push 一下更新 len，以便于生成下一个 label
-            app_state.folders.write().unwrap().push(ff);
+            app_state.folders.write().unwrap().insert(label, ff);
         }
         _ => {}
     }
