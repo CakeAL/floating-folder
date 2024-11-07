@@ -13,6 +13,7 @@ import { onMounted, ref } from "vue";
 //   isExpended.value = false;
 // };
 
+// 禁止刷新
 const label = ref<any>("");
 
 onMounted(() => {
@@ -37,6 +38,16 @@ appWindow.listen("tauri://move", () => {
     });
   }, 100);
 });
+
+// drag
+
+appWindow.listen("tauri://drag-drop", async event => {
+  console.log(event);
+  await invoke("send_path_to_folder", {
+    label: label.value,
+    path: (event.payload as any).paths
+  })
+})
 </script>
 
 <template>
