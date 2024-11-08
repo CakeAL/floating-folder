@@ -10,6 +10,7 @@ use rayon::iter::ParallelIterator;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::ffi::{OsStr, OsString};
+use std::fs::OpenOptions;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
@@ -223,15 +224,25 @@ impl FloatingFolder {
                 label: label.to_string(),
                 ..Default::default()
             };
-            serde_json::to_writer(
-                std::fs::File::create_new(dir_path.join("settings.json"))?,
-                &settings,
-            )?;
+            Self::save_settings(dir_path.join("settings.json"), &settings)?;
             let ff = FloatingFolder {
                 content_path: dir_path.join("content"),
                 settings,
             };
             break Ok(ff);
         }
+    }
+
+    fn save_settings(
+        setting_path: impl AsRef<Path>,
+        settings: &FolderSettings,
+    ) -> std::io::Result<()> {
+        let setting_file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(setting_path)?;
+        serde_json::to_writer(setting_file, settings)?;
+        Ok(())
     }
 }

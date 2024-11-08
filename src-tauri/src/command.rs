@@ -26,7 +26,7 @@ pub fn send_path_to_folder(
     path: &str,
 ) -> Result<(), String> {
     if let Some(folder) = app_state.folders.write().unwrap().get_mut(label) {
-        // TODO: 判断文件 or 文件夹，后缀名 .lnk or others
+        // 判断文件 or 文件夹，后缀名 .lnk or others
         // 如果是文件夹，创建一个快捷方式
         // 如果是 .lnk 移动该快捷方式到 data
         let file_path = PathBuf::from(path);
@@ -34,11 +34,8 @@ pub fn send_path_to_folder(
             if let Err(e) = folder.copy_in(file_path) {
                 log::error!("Folder cannot copy in the file, with path: {path}, err: {e:?}");
             };
-        } else if file_path.is_dir() {
-            todo!()
-        } else {
-            todo!()
-        }
+        } 
+        // 其他情况不做任何事
     }
     Ok(())
 }
