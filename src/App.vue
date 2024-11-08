@@ -31,23 +31,26 @@ appWindow.listen("tauri://move", () => {
   clearTimeout(moveTimeout);
   moveTimeout = setTimeout(async () => {
     let pos = await appWindow.outerPosition();
+    const scaleFactor = await appWindow.scaleFactor();
+    const logicalX = parseInt((pos.x / scaleFactor).toFixed(0));
+    const logicalY = parseInt((pos.y / scaleFactor).toFixed(0));
     await invoke("moved_folder", {
       label: label.value,
-      x: pos.x,
-      y: pos.y,
+      x: logicalX,
+      y: logicalY,
     });
   }, 100);
 });
 
 // drag
 
-appWindow.listen("tauri://drag-drop", async event => {
+appWindow.listen("tauri://drag-drop", async (event) => {
   console.log(event);
   await invoke("send_path_to_folder", {
     label: label.value,
-    path: (event.payload as any).paths
-  })
-})
+    path: (event.payload as any).paths,
+  });
+});
 </script>
 
 <template>
