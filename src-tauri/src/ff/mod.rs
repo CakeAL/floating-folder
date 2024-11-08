@@ -57,16 +57,18 @@ impl Default for FolderSettings {
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct FloatingFolder {
     pub content_path: PathBuf,
+    pub settings_path: PathBuf,
     pub settings: FolderSettings,
 }
 
 impl FloatingFolder {
+    /// path: The floating folder path, which contains `content` and `settings.json`
     pub fn parse(path: impl AsRef<Path>) -> std::io::Result<Self> {
         let content_path = path.as_ref().join("content");
         if !content_path.exists() {
             std::fs::create_dir(&content_path)?;
         }
-        let settings_path = content_path.join("settings.json");
+        let settings_path = path.join("settings.json");
 
         let settings = if settings_path.exists() {
             serde_json::from_reader(std::fs::File::open(settings_path)?)?
@@ -76,6 +78,7 @@ impl FloatingFolder {
 
         Ok(FloatingFolder {
             content_path,
+            settings_path,
             settings,
         })
     }
@@ -153,7 +156,7 @@ impl FloatingFolder {
                         return None;
                     }
                     let settings_path = entry_path.join("settings.json");
-                    let settings = match std::fs::File::open(settings_path)
+                    let settings = match std::fs::File::open(&settings_path)
                         .map(|x| serde_json::from_reader::<_, FolderSettings>(x))
                     {
                         Ok(o) => match o {
@@ -178,6 +181,7 @@ impl FloatingFolder {
 
                     let mut ff = FloatingFolder {
                         content_path: entry.path().join("content"),
+                        settings_path,
                         settings,
                     };
                     if let Err(e) = ff.check_contents() {
@@ -214,6 +218,7 @@ impl FloatingFolder {
             let dir_path = idx
                 .map(|x| ffs.as_ref().join(format!("{label} ({x})")))
                 .unwrap_or(ffs.as_ref().join(label));
+            // avoid duplicate folder name in file system.
             if dir_path.exists() {
                 idx = Some(idx.unwrap_or(0) + 1);
                 continue;
@@ -223,12 +228,14 @@ impl FloatingFolder {
                 label: label.to_string(),
                 ..Default::default()
             };
+            let settings_path = dir_path.join("settings.json");
             serde_json::to_writer(
-                std::fs::File::create_new(dir_path.join("settings.json"))?,
+                std::fs::File::create_new(&settings_path)?,
                 &settings,
             )?;
             let ff = FloatingFolder {
                 content_path: dir_path.join("content"),
+                settings_path,
                 settings,
             };
             break Ok(ff);
