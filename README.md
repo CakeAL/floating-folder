@@ -7,7 +7,7 @@
 Desktop 小部件，类似于手机上文件夹，能打开的文件夹🤔。
 
 ## 开发
-
+ONLY for Windows. 
 ```bash
 pnpm i
 pnpm tauri dev

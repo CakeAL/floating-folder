@@ -13,6 +13,7 @@ mod command;
 mod ff;
 mod folder_window;
 mod state;
+mod util;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
