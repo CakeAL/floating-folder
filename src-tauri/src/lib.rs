@@ -21,7 +21,11 @@ pub fn run() {
         .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![moved_folder, send_path_to_folder])
+        .invoke_handler(tauri::generate_handler![
+            moved_folder,
+            send_path_to_folder,
+            get_icons
+        ])
         .setup(|app| {
             app.manage(AppState::init(app.handle())?);
             // 系统托盘

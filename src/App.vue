@@ -2,6 +2,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { onMounted, ref } from "vue";
+import { Icon } from "./entity";
+import IconComponent from "./components/IconComponent.vue";
 
 // const isExpended = ref(false);
 
@@ -20,6 +22,8 @@ onMounted(() => {
   if ((window as any).label) {
     label.value = (window as any).label;
   }
+  // 获取图标
+  getIcons();
 });
 
 // move
@@ -49,14 +53,32 @@ appWindow.listen("tauri://drag-drop", async (event) => {
   await invoke("send_path_to_folder", {
     label: label.value,
     path: (event.payload as any).paths,
-  });
+  }).then(() => getIcons());
 });
+
+// Icon
+const icons = ref<Array<Icon>>([]);
+const getIcons = async () => {
+  let res = await invoke("get_icons", { label: label.value }).catch((err) =>
+    console.log(err)
+  );
+  icons.value = JSON.parse(res as unknown as string);
+};
 </script>
 
 <template>
   <div class="container">
     <!-- :class="{ expanded: isExpended }" -->
-    <div class="folder" data-tauri-drag-region>Hi, I'm {{ label }}</div>
+    <div class="folder" data-tauri-drag-region>
+      Hi, I'm {{ label }}
+      <IconComponent
+        v-for="(icon, index) in icons"
+        :key="index"
+        :iconBase64="icon.base64"
+        :lnkName="icon.lnkName"
+        :path="icon.path"
+      ></IconComponent>
+    </div>
     <!--       @click="openFolder"
       @mouseleave="closeFolder" -->
   </div>

@@ -1,8 +1,9 @@
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf};
 
+use serde::Serialize;
 use tauri::State;
 
-use crate::state::AppState;
+use crate::{state::AppState, util::get_icon_base64};
 
 #[tauri::command(async)]
 pub fn moved_folder(
@@ -43,4 +44,30 @@ pub fn send_path_to_folder(
         });
     }
     Ok(())
+}
+
+#[derive(Debug, Serialize)]
+struct Icon {
+    base64: String,
+    lnk_name: OsString,
+    path: String,
+}
+
+#[tauri::command(async)]
+pub fn get_icons(app_state: State<'_, AppState>, label: &str) -> Result<String, String> {
+    if let Some(folder) = app_state.folders.read().unwrap().get(label) {
+        let icons = folder
+            .get_contents()
+            .iter()
+            .map(|path| Icon {
+                base64: get_icon_base64(path).unwrap_or_default(),
+                lnk_name: path.file_name().unwrap_or_default().to_os_string(),
+                path: path.to_str().unwrap_or_default().to_string(),
+            })
+            .collect::<Vec<Icon>>();
+        Ok(serde_json::json!(icons).to_string())
+    } else {
+        log::error!("No Such Folder, label: {label}");
+        Err("No Such Folder".into())
+    }
 }
