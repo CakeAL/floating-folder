@@ -1,7 +1,7 @@
 <template>
   <div class="icon-container" @click="handleClick">
     <img :src="iconBase64" alt="Icon" class="icon" />
-    <div class="file-name">{{ lnkName }}</div>
+    <div class="file-name">{{ name }}</div>
   </div>
 </template>
 
@@ -14,7 +14,7 @@ export default {
       type: String,
       required: true,
     },
-    lnkName: {
+    name: {
       type: String,
       required: true,
     },
@@ -33,24 +33,29 @@ export default {
 
 <style scoped>
 .icon-container {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
   width: 64px;
-  height: 96px; /* Adjust height to accommodate file name */
+  height: 64px; 
   box-sizing: border-box;
+  padding-top: 10px;
 }
 
 .icon {
-  width: 64px;
-  height: 64px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
-  margin-bottom: 4px; /* Space between icon and file name */
+  margin-bottom: 2px; 
 }
 
 .file-name {
   font-size: 12px;
+  width: 64px;
+  height: 20px;
   text-align: center;
-  word-wrap: break-word;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 </style>

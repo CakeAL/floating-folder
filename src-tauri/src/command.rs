@@ -1,4 +1,4 @@
-use std::{ffi::OsString, path::PathBuf};
+use std::path::PathBuf;
 
 use serde::Serialize;
 use tauri::State;
@@ -49,7 +49,7 @@ pub fn send_path_to_folder(
 #[derive(Debug, Serialize)]
 struct Icon {
     base64: String,
-    lnk_name: OsString,
+    name: String,
     path: String,
 }
 
@@ -61,7 +61,11 @@ pub fn get_icons(app_state: State<'_, AppState>, label: &str) -> Result<String, 
             .iter()
             .map(|path| Icon {
                 base64: get_icon_base64(path).unwrap_or_default(),
-                lnk_name: path.file_name().unwrap_or_default().to_os_string(),
+                name: path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or_default()
+                    .to_string(),
                 path: path.to_str().unwrap_or_default().to_string(),
             })
             .collect::<Vec<Icon>>();

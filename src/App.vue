@@ -70,12 +70,12 @@ const getIcons = async () => {
   <div class="container">
     <!-- :class="{ expanded: isExpended }" -->
     <div class="folder" data-tauri-drag-region>
-      Hi, I'm {{ label }}
+      <!-- Hi, I'm {{ label }} -->
       <IconComponent
         v-for="(icon, index) in icons"
         :key="index"
         :iconBase64="icon.base64"
-        :lnkName="icon.lnkName"
+        :name="icon.name"
         :path="icon.path"
       ></IconComponent>
     </div>
@@ -90,6 +90,8 @@ const getIcons = async () => {
   height: 192px;
   position: relative;
   pointer-events: none;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .folder {
