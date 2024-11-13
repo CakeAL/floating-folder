@@ -40,6 +40,8 @@ export default {
   height: 64px; 
   box-sizing: border-box;
   padding-top: 10px;
+  pointer-events: none;
+  user-select: none;
 }
 
 .icon {
@@ -47,6 +49,7 @@ export default {
   height: 32px;
   object-fit: contain;
   margin-bottom: 2px; 
+  pointer-events: all;
 }
 
 .file-name {
@@ -57,5 +60,6 @@ export default {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  pointer-events: all;
 }
 </style>

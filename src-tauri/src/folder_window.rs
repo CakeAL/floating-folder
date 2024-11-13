@@ -1,4 +1,8 @@
 use tauri::{utils::config::WindowConfig, AppHandle, WebviewWindowBuilder};
+// use winapi::{
+//     shared::windef::HWND__,
+//     um::winuser::{SetWindowPos, HWND_BOTTOM, HWND_BROADCAST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE},
+// };
 
 use crate::ff::FolderSettings;
 use anyhow::Result;
@@ -26,8 +30,26 @@ pub fn new_folder_window(app: &AppHandle, folder_setting: &FolderSettings) -> Re
         },
     )?
     .build()?;
+    // // 设置到最下面
+    // set_window_below_desktop_icons(&window)?;
     // 发送标识符到该窗口，让窗口知道自己是谁
     // app.emit_to(&folder_setting.label, "set-label", &folder_setting.label)?;
     window.eval(&format!("window.label = '{}';", &folder_setting.label))?;
     Ok(())
 }
+
+// fn set_window_below_desktop_icons(window: &tauri::WebviewWindow) -> Result<()> {
+//     let hwnd = window.hwnd()?;
+//     unsafe {
+//         SetWindowPos(
+//             hwnd.0 as *mut HWND__,
+//             HWND_BOTTOM,
+//             0,
+//             0,
+//             0,
+//             0,
+//             SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE,
+//         );
+//     }
+//     Ok(())
+// }

@@ -32,6 +32,9 @@ pub fn send_path_to_folder(
         // 判断文件 or 文件夹，后缀名 .lnk or others
         // 如果是文件夹，创建一个快捷方式
         // 如果是 .lnk 移动该快捷方式到 data
+        if folder.settings.contents.len() >= 9{
+            return Err("这个文件夹已经满了".into());
+        }
         path.iter().for_each(|path| {
             let file_path = PathBuf::from(path);
             if file_path.extension().map_or(false, |ext| ext == "lnk") {
