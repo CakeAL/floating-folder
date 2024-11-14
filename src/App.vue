@@ -78,7 +78,13 @@ const handleClick = async (event: { preventDefault: () => void }) => {
 };
 
 const scaleFolder = async (len: number) => {
-  invoke("scale_folder", { label, len });
+  let timeout = 0;
+  if (len === 64.0) {
+    timeout = 200;
+  }
+  setTimeout(() => {
+    invoke("scale_folder", { label, len });
+  }, timeout);
 };
 </script>
 
@@ -108,6 +114,7 @@ const scaleFolder = async (len: number) => {
   position: relative;
   pointer-events: none;
   overflow: hidden;
+  transition: all 0.2s ease-in-out;
 }
 
 .container:hover {
