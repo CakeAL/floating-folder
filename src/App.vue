@@ -6,16 +6,6 @@ import { Icon } from "./entity";
 import { Menu } from "@tauri-apps/api/menu";
 import IconComponent from "./components/IconComponent.vue";
 
-// const isExpended = ref(false);
-
-// const openFolder = () => {
-//   isExpended.value = true;
-// };
-
-// const closeFolder = () => {
-//   isExpended.value = false;
-// };
-
 onMounted(() => {
   // 获取图标
   getIcons();
@@ -86,13 +76,20 @@ const handleClick = async (event: { preventDefault: () => void }) => {
   const menu = await menuPromise;
   menu.popup();
 };
+
+const scaleFolder = async (len: number) => {
+  invoke("scale_folder", { label, len });
+};
 </script>
 
 <template>
   <div class="container" @contextmenu="handleClick">
-    <!-- :class="{ expanded: isExpended }" -->
-    <div class="folder" data-tauri-drag-region>
-      <!-- Hi, I'm {{ label }} -->
+    <div
+      class="folder"
+      data-tauri-drag-region
+      v-on:mouseenter="scaleFolder(192.0)"
+      v-on:mouseleave="scaleFolder(64.0)"
+    >
       <IconComponent
         v-for="(icon, index) in icons"
         :key="index"
@@ -101,40 +98,38 @@ const handleClick = async (event: { preventDefault: () => void }) => {
         :path="icon.path"
       ></IconComponent>
     </div>
-    <!--       @click="openFolder"
-      @mouseleave="closeFolder" -->
   </div>
 </template>
 
 <style scoped>
 .container {
-  width: 192px;
-  height: 192px;
+  width: 64px;
+  height: 64px;
   position: relative;
   pointer-events: none;
-  overflow-x: hidden;
-  overflow-y: hidden;
+  overflow: hidden;
+}
+
+.container:hover {
+  width: 192px;
+  height: 192px;
 }
 
 .folder {
-  width: 192px;
-  height: 192px;
+  width: 64px;
+  height: 64px;
   background-color: rgba(200, 200, 200, 0.3);
   position: absolute;
-  /* top: 64px;
-  left: 64px; */
   border-radius: 16px;
-  /* transition: all 0.3s ease-in-out; */
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
   pointer-events: all;
+  scrollbar-width: 0px;
 }
 
-/* .folder:hover {
+.folder:hover {
   width: 192px;
   height: 192px;
-  top: 0px;
-  left: 0px;
-  border-radius: 16px;
   pointer-events: all;
-} */
+}
 </style>

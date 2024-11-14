@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use serde::Serialize;
-use tauri::{Manager, State};
+use tauri::{LogicalSize, Manager, State};
 use tauri_plugin_shell::ShellExt;
 
 use crate::{state::AppState, util::get_icon_base64};
@@ -114,4 +114,13 @@ pub fn open_folder(
     app.shell()
         .open(folder_path.to_str().unwrap_or_default(), None)
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command(async)]
+pub fn scale_folder(app: tauri::AppHandle, label: &str, len: f64) {
+    let window = app.get_webview_window(label).unwrap();
+    let _ = window.set_size(LogicalSize {
+        width: len,
+        height: len,
+    });
 }

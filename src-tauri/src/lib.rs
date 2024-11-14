@@ -26,7 +26,8 @@ pub fn run() {
             send_path_to_folder,
             get_icons,
             del_folder,
-            open_folder
+            open_folder,
+            scale_folder
         ])
         .setup(|app| {
             app.manage(AppState::init(app.handle())?);

@@ -1,18 +1,16 @@
 use tauri::{utils::config::WindowConfig, AppHandle, WebviewWindowBuilder};
 // use winapi::{
 //     shared::windef::HWND__,
-//     um::winuser::{SetWindowPos, HWND_BOTTOM, HWND_BROADCAST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE},
+//     um::winuser::{SetWindowPos, HWND_BOTTOM, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE},
 // };
 
 use crate::ff::FolderSettings;
 use anyhow::Result;
 
 pub fn new_folder_window(app: &AppHandle, folder_setting: &FolderSettings) -> Result<()> {
-    let _window = WebviewWindowBuilder::from_config(
+    let window = WebviewWindowBuilder::from_config(
         app,
         &WindowConfig {
-            width: 192.0,
-            height: 192.0,
             x: Some(folder_setting.window_pos.0 as f64),
             y: Some(folder_setting.window_pos.1 as f64),
             fullscreen: false,
@@ -30,16 +28,19 @@ pub fn new_folder_window(app: &AppHandle, folder_setting: &FolderSettings) -> Re
         },
     )?
     .build()?;
-    // // 设置到最下面
-    // set_window_below_desktop_icons(&window)?;
+    // 强制设置窗口大小为 64.0
+    use crate::command::scale_folder;
+    scale_folder(app.to_owned(), window.label(), 64.0);
+    // 设置到最下面
+    // set_window_below_desktop_icons(&_window)?;
     Ok(())
 }
 
 // fn set_window_below_desktop_icons(window: &tauri::WebviewWindow) -> Result<()> {
-//     let hwnd = window.hwnd()?;
+//     let hwnd = window.hwnd()?.0 as *mut HWND__;
 //     unsafe {
 //         SetWindowPos(
-//             hwnd.0 as *mut HWND__,
+//             hwnd,
 //             HWND_BOTTOM,
 //             0,
 //             0,
