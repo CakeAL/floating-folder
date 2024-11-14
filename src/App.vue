@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { onMounted, ref } from "vue";
 import { Icon } from "./entity";
+import { Menu } from "@tauri-apps/api/menu";
 import IconComponent from "./components/IconComponent.vue";
 
 // const isExpended = ref(false);
@@ -15,19 +16,14 @@ import IconComponent from "./components/IconComponent.vue";
 //   isExpended.value = false;
 // };
 
-// 禁止刷新
-const label = ref<any>("");
-
 onMounted(() => {
-  if ((window as any).label) {
-    label.value = (window as any).label;
-  }
   // 获取图标
   getIcons();
 });
 
-// move
+// move & label
 const appWindow = getCurrentWindow();
+const label = appWindow.label;
 
 let moveTimeout: number | undefined;
 
@@ -39,7 +35,7 @@ appWindow.listen("tauri://move", () => {
     const logicalX = parseInt((pos.x / scaleFactor).toFixed(0));
     const logicalY = parseInt((pos.y / scaleFactor).toFixed(0));
     await invoke("moved_folder", {
-      label: label.value,
+      label,
       x: logicalX,
       y: logicalY,
     });
@@ -47,11 +43,10 @@ appWindow.listen("tauri://move", () => {
 });
 
 // drag
-
 appWindow.listen("tauri://drag-drop", async (event) => {
   console.log(event);
   await invoke("send_path_to_folder", {
-    label: label.value,
+    label: label,
     path: (event.payload as any).paths,
   }).then(() => getIcons());
 });
@@ -59,15 +54,42 @@ appWindow.listen("tauri://drag-drop", async (event) => {
 // Icon
 const icons = ref<Array<Icon>>([]);
 const getIcons = async () => {
-  let res = await invoke("get_icons", { label: label.value }).catch((err) =>
+  let res = await invoke("get_icons", { label }).catch((err) =>
     console.log(err)
   );
   icons.value = JSON.parse(res as unknown as string);
 };
+
+// Context Menu
+
+const menuPromise = Menu.new({
+  items: [
+    {
+      id: "open_folder",
+      text: "打开文件夹所在位置",
+      action: async () => {
+        await invoke("open_folder", { label });
+      },
+    },
+    {
+      id: "del_folder",
+      text: "删除该文件夹",
+      action: async () => {
+        await invoke("del_folder", { label });
+      },
+    },
+  ],
+});
+
+const handleClick = async (event: { preventDefault: () => void }) => {
+  event.preventDefault();
+  const menu = await menuPromise;
+  menu.popup();
+};
 </script>
 
 <template>
-  <div class="container">
+  <div class="container" @contextmenu="handleClick">
     <!-- :class="{ expanded: isExpended }" -->
     <div class="folder" data-tauri-drag-region>
       <!-- Hi, I'm {{ label }} -->

@@ -24,7 +24,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             moved_folder,
             send_path_to_folder,
-            get_icons
+            get_icons,
+            del_folder,
+            open_folder
         ])
         .setup(|app| {
             app.manage(AppState::init(app.handle())?);

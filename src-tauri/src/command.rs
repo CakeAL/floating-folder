@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 use serde::Serialize;
-use tauri::State;
+use tauri::{Manager, State};
+use tauri_plugin_shell::ShellExt;
 
 use crate::{state::AppState, util::get_icon_base64};
 
@@ -32,7 +33,7 @@ pub fn send_path_to_folder(
         // 判断文件 or 文件夹，后缀名 .lnk or others
         // 如果是文件夹，创建一个快捷方式
         // 如果是 .lnk 移动该快捷方式到 data
-        if folder.settings.contents.len() >= 9{
+        if folder.settings.contents.len() >= 9 {
             return Err("这个文件夹已经满了".into());
         }
         path.iter().for_each(|path| {
@@ -77,4 +78,40 @@ pub fn get_icons(app_state: State<'_, AppState>, label: &str) -> Result<String, 
         log::error!("No Such Folder, label: {label}");
         Err("No Such Folder".into())
     }
+}
+
+#[tauri::command(async)]
+pub fn del_folder(
+    app_state: State<'_, AppState>,
+    app: tauri::AppHandle,
+    label: &str,
+) -> Result<(), String> {
+    app_state
+        .folders
+        .write()
+        .unwrap()
+        .remove(label)
+        .and_then(|folder| Some(folder.del_folder()));
+    app.get_webview_window(label)
+        .unwrap()
+        .close()
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command(async)]
+pub fn open_folder(
+    app_state: State<'_, AppState>,
+    app: tauri::AppHandle,
+    label: &str,
+) -> Result<(), String> {
+    let folder_path = app_state
+        .folders
+        .read()
+        .unwrap()
+        .get(label)
+        .map(|ff| ff.path.clone())
+        .unwrap_or_default();
+    app.shell()
+        .open(folder_path.to_str().unwrap_or_default(), None)
+        .map_err(|e| e.to_string())
 }

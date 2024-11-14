@@ -8,7 +8,7 @@ use crate::ff::FolderSettings;
 use anyhow::Result;
 
 pub fn new_folder_window(app: &AppHandle, folder_setting: &FolderSettings) -> Result<()> {
-    let window = WebviewWindowBuilder::from_config(
+    let _window = WebviewWindowBuilder::from_config(
         app,
         &WindowConfig {
             width: 192.0,
@@ -32,9 +32,6 @@ pub fn new_folder_window(app: &AppHandle, folder_setting: &FolderSettings) -> Re
     .build()?;
     // // 设置到最下面
     // set_window_below_desktop_icons(&window)?;
-    // 发送标识符到该窗口，让窗口知道自己是谁
-    // app.emit_to(&folder_setting.label, "set-label", &folder_setting.label)?;
-    window.eval(&format!("window.label = '{}';", &folder_setting.label))?;
     Ok(())
 }
 

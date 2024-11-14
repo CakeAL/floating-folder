@@ -9,7 +9,9 @@ use rayon::iter::ParallelBridge;
 use rayon::iter::ParallelIterator;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsString;
+use std::fs;
+use std::fs::remove_dir_all;
 use std::fs::OpenOptions;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
@@ -57,8 +59,7 @@ impl Default for FolderSettings {
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct FloatingFolder {
-    pub content_path: PathBuf,
-    pub settings_path: PathBuf,
+    pub path: PathBuf,
     pub settings: FolderSettings,
 }
 
@@ -79,19 +80,19 @@ impl FloatingFolder {
         };
 
         Ok(FloatingFolder {
-            content_path,
-            settings_path,
+            path: PathBuf::from(path),
             settings,
         })
     }
 
     pub fn copy_in(&mut self, src: impl AsRef<Path>) -> std::io::Result<()> {
-        let to: PathBuf =
-            self.content_path
-                .join(src.as_ref().file_name().ok_or(std::io::Error::new(
-                    ErrorKind::InvalidInput,
-                    "Invalid src path",
-                ))?);
+        let to: PathBuf = self
+            .path
+            .join("content")
+            .join(src.as_ref().file_name().ok_or(std::io::Error::new(
+                ErrorKind::InvalidInput,
+                "Invalid src path",
+            ))?);
         self.settings
             .contents
             .push(src.as_ref().as_os_str().to_os_string());
@@ -104,13 +105,15 @@ impl FloatingFolder {
         self.save_settings()
     }
 
-    pub fn get_dir_name(&self) -> &OsStr {
-        self.content_path.file_name().unwrap()
+    pub fn get_dir_name(&self) -> OsString {
+        let content_path = self.path.join("content");
+        content_path.file_name().unwrap().to_os_string()
     }
 
     pub fn check_contents(&mut self) -> std::io::Result<()> {
+        let content_path = self.path.join("content");
         let mut valid_name = HashSet::new();
-        for x in self.content_path.read_dir()? {
+        for x in content_path.read_dir()? {
             let name = x?.file_name();
             valid_name.insert(name.clone());
             if !self.settings.contents.contains(&name) {
@@ -122,16 +125,18 @@ impl FloatingFolder {
     }
 
     pub fn get_contents(&self) -> Vec<PathBuf> {
+        let content_path = self.path.join("content");
         self.settings
             .contents
             .iter()
-            .map(|x| self.content_path.join(x))
+            .map(|x| content_path.join(x))
             .collect()
     }
 
     pub fn get_content(&self, idx: usize) -> std::io::Result<PathBuf> {
+        let content_path = self.path.join("content");
         if let Some(file) = self.settings.contents.get(idx) {
-            let file_path = self.content_path.join(file);
+            let file_path = content_path.join(file);
             Ok(file_path)
         } else {
             Err(std::io::Error::new(
@@ -191,8 +196,7 @@ impl FloatingFolder {
                     };
 
                     let mut ff = FloatingFolder {
-                        content_path: entry.path().join("content"),
-                        settings_path,
+                        path: entry.path(),
                         settings,
                     };
                     if let Err(e) = ff.check_contents() {
@@ -239,10 +243,8 @@ impl FloatingFolder {
                 label: label.to_string(),
                 ..Default::default()
             };
-            let settings_path = dir_path.join("settings.json");
             let ff = FloatingFolder {
-                content_path: dir_path.join("content"),
-                settings_path,
+                path: dir_path,
                 settings,
             };
             ff.save_settings()?;
@@ -250,12 +252,17 @@ impl FloatingFolder {
         }
     }
 
+    pub fn del_folder(&self) -> std::io::Result<()> {
+        dbg!(&self.path);
+        fs::remove_dir_all(&self.path)
+    }
+
     fn save_settings(&self) -> std::io::Result<()> {
         let setting_file = OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
-            .open(&self.settings_path)?;
+            .open(&self.path.join("settings.json"))?;
         serde_json::to_writer(setting_file, &self.settings)?;
         Ok(())
     }

@@ -42,6 +42,12 @@ export default {
   padding-top: 10px;
   pointer-events: none;
   user-select: none;
+  transition: 0.2s;
+}
+
+.icon-container:hover {
+  background-color: rgba(22, 22, 22, 0.2);
+  border-radius: 16px;
 }
 
 .icon {
