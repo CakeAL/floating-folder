@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use serde::Serialize;
-use tauri::{LogicalSize, Manager, State};
+use tauri::{LogicalPosition, LogicalSize, Manager, State};
 use tauri_plugin_shell::ShellExt;
 
 use crate::{state::AppState, util::get_icon_base64};
@@ -86,6 +86,7 @@ pub fn del_folder(
     app: tauri::AppHandle,
     label: &str,
 ) -> Result<(), String> {
+    dbg!(label);
     app_state
         .folders
         .write()
@@ -118,9 +119,24 @@ pub fn open_folder(
 
 #[tauri::command(async)]
 pub fn scale_folder(app: tauri::AppHandle, label: &str, len: f64) {
+    // 获取窗口对象
     let window = app.get_webview_window(label).unwrap();
+
+    // 获取当前窗口的位置和大小
+    let scale_factor = window.scale_factor().unwrap();
+    let current_position: LogicalPosition<f64> = window.outer_position().unwrap().to_logical(scale_factor);
+    let current_size: LogicalSize<f64> = window.inner_size().unwrap().to_logical(scale_factor);
+
+    // 计算新的左上角位置，确保窗口中心不变
+    let new_x = current_position.x + (current_size.width / 2.0) - len / 2.0;
+    let new_y = current_position.y + (current_size.height / 2.0) - len / 2.0;
+
+    // 设置新的窗口大小
     let _ = window.set_size(LogicalSize {
         width: len,
         height: len,
     });
+
+    // 设置新的窗口位置
+    let _ = window.set_position(LogicalPosition { x: new_x, y: new_y });
 }

@@ -5,6 +5,7 @@ import { onMounted, ref } from "vue";
 import { Icon } from "./entity";
 import { Menu } from "@tauri-apps/api/menu";
 import IconComponent from "./components/IconComponent.vue";
+import Thumbnail from "./components/Thumbnail.vue";
 
 onMounted(() => {
   // 获取图标
@@ -34,7 +35,7 @@ appWindow.listen("tauri://move", () => {
 
 // drag
 appWindow.listen("tauri://drag-drop", async (event) => {
-  console.log(event);
+  // console.log(event);
   await invoke("send_path_to_folder", {
     label: label,
     path: (event.payload as any).paths,
@@ -51,7 +52,6 @@ const getIcons = async () => {
 };
 
 // Context Menu
-
 const menuPromise = Menu.new({
   items: [
     {
@@ -68,6 +68,11 @@ const menuPromise = Menu.new({
         await invoke("del_folder", { label });
       },
     },
+    {
+      id: "reflesh",
+      text: "刷新",
+      action: () => location.reload(),
+    },
   ],
 });
 
@@ -77,58 +82,60 @@ const handleClick = async (event: { preventDefault: () => void }) => {
   menu.popup();
 };
 
-const scaleFolder = async (len: number) => {
-  let timeout = 0;
-  if (len === 64.0) {
-    timeout = 200;
-  }
+// if close and scale
+const if_close = ref(true);
+
+const handleMouseEnter = () => {
+  invoke("scale_folder", { label, len: 192.0 });
+  if_close.value = false;
+};
+
+const handleMouseLeave = () => {
   setTimeout(() => {
-    invoke("scale_folder", { label, len });
-  }, timeout);
+    if_close.value = true;
+    invoke("scale_folder", { label, len: 64.0 });
+  }, 200);
 };
 </script>
 
 <template>
-  <div class="container" @contextmenu="handleClick">
-    <div
-      class="folder"
-      data-tauri-drag-region
-      v-on:mouseenter="scaleFolder(192.0)"
-      v-on:mouseleave="scaleFolder(64.0)"
-    >
+  <div
+    @contextmenu="handleClick"
+    class="folder"
+    v-on:mouseenter="handleMouseEnter"
+    v-on:mouseleave="handleMouseLeave"
+  >
+    <div v-if="if_close" style="width: 64px; height: 64px">
+      <Thumbnail
+        v-for="(icon, index) in icons"
+        :key="index"
+        :iconBase64="icon.base64"
+      />
+    </div>
+    <div v-else style="width: 192px; height: 192px" data-tauri-drag-region>
       <IconComponent
         v-for="(icon, index) in icons"
         :key="index"
         :iconBase64="icon.base64"
         :name="icon.name"
         :path="icon.path"
-      ></IconComponent>
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
-.container {
-  width: 64px;
-  height: 64px;
-  position: relative;
-  pointer-events: none;
-  overflow: hidden;
-  transition: all 0.2s ease-in-out;
-}
-
-.container:hover {
-  width: 192px;
-  height: 192px;
-}
-
 .folder {
+  overflow: hidden;
   width: 64px;
   height: 64px;
   background-color: rgba(200, 200, 200, 0.3);
   position: absolute;
-  border-radius: 16px;
+  top: 50%;
+  left: 50%;
+  border-radius: 10px;
   transition: all 0.2s ease-in-out;
+  transform: translate(-50%, -50%);
   cursor: pointer;
   pointer-events: all;
   scrollbar-width: 0px;

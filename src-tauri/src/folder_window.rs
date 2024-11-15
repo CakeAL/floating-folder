@@ -1,7 +1,9 @@
 use tauri::{utils::config::WindowConfig, AppHandle, WebviewWindowBuilder};
 // use winapi::{
-//     shared::windef::HWND__,
-//     um::winuser::{SetWindowPos, HWND_BOTTOM, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE},
+//     shared::{ntdef::NULL, windef::HWND__},
+//     um::winuser::{
+//         FindWindowExA, FindWindowW, GetDesktopWindow, SetParent, SetWindowPos, HWND_BOTTOM, HWND_TOP, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW
+//     },
 // };
 
 use crate::ff::FolderSettings;
@@ -31,14 +33,20 @@ pub fn new_folder_window(app: &AppHandle, folder_setting: &FolderSettings) -> Re
     // 强制设置窗口大小为 64.0
     use crate::command::scale_folder;
     scale_folder(app.to_owned(), window.label(), 64.0);
-    // 设置到最下面
-    // set_window_below_desktop_icons(&_window)?;
+    // // 设置到最下面
+    // set_window_below_desktop_icons(&window)?;
     Ok(())
 }
 
 // fn set_window_below_desktop_icons(window: &tauri::WebviewWindow) -> Result<()> {
 //     let hwnd = window.hwnd()?.0 as *mut HWND__;
 //     unsafe {
+//         let workerw = FindWindowW("WorkerW\0".encode_utf16().collect::<Vec<u16>>().as_ptr(), null_mut());
+//         if workerw.is_null() {
+//             dbg!("Could not find workerw Window");
+//             return Err(anyhow::anyhow!("Could not find workerw Window"));
+//         }
+//         SetParent(hwnd, workerw);
 //         SetWindowPos(
 //             hwnd,
 //             HWND_BOTTOM,
@@ -46,7 +54,7 @@ pub fn new_folder_window(app: &AppHandle, folder_setting: &FolderSettings) -> Re
 //             0,
 //             0,
 //             0,
-//             SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE,
+//             SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
 //         );
 //     }
 //     Ok(())
