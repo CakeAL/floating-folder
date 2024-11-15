@@ -21,14 +21,8 @@ let moveTimeout: number | undefined;
 appWindow.listen("tauri://move", () => {
   clearTimeout(moveTimeout);
   moveTimeout = setTimeout(async () => {
-    let pos = await appWindow.outerPosition();
-    const scaleFactor = await appWindow.scaleFactor();
-    const logicalX = parseInt((pos.x / scaleFactor).toFixed(0));
-    const logicalY = parseInt((pos.y / scaleFactor).toFixed(0));
     await invoke("moved_folder", {
       label,
-      x: logicalX,
-      y: logicalY,
     });
   }, 100);
 });
@@ -85,17 +79,18 @@ const handleClick = async (event: { preventDefault: () => void }) => {
 // if close and scale
 const if_close = ref(true);
 
-const handleMouseEnter = () => {
-  invoke("scale_folder", { label, len: 192.0 });
+const handleMouseEnter = async () => {
+  await invoke("scale_folder", { label, len: 192.0 });
   if_close.value = false;
 };
 
 const handleMouseLeave = () => {
-  setTimeout(() => {
+  setTimeout(async () => {
+    await invoke("scale_folder", { label, len: 64.0 });
     if_close.value = true;
-    invoke("scale_folder", { label, len: 64.0 });
   }, 200);
 };
+
 </script>
 
 <template>
@@ -105,14 +100,14 @@ const handleMouseLeave = () => {
     v-on:mouseenter="handleMouseEnter"
     v-on:mouseleave="handleMouseLeave"
   >
-    <div v-if="if_close" style="width: 64px; height: 64px">
+    <div v-if="if_close">
       <Thumbnail
         v-for="(icon, index) in icons"
         :key="index"
         :iconBase64="icon.base64"
       />
     </div>
-    <div v-else style="width: 192px; height: 192px" data-tauri-drag-region>
+    <div v-else data-tauri-drag-region>
       <IconComponent
         v-for="(icon, index) in icons"
         :key="index"
@@ -131,11 +126,11 @@ const handleMouseLeave = () => {
   height: 64px;
   background-color: rgba(200, 200, 200, 0.3);
   position: absolute;
-  top: 50%;
-  left: 50%;
+  /* top: 50%;
+  left: 50%; */
   border-radius: 10px;
   transition: all 0.2s ease-in-out;
-  transform: translate(-50%, -50%);
+  /* transform: translate(-50%, -50%); */
   cursor: pointer;
   pointer-events: all;
   scrollbar-width: 0px;

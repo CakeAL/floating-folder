@@ -1,4 +1,4 @@
-use tauri::{utils::config::WindowConfig, AppHandle, WebviewWindowBuilder};
+use tauri::{utils::config::WindowConfig, AppHandle, LogicalSize, WebviewWindowBuilder};
 // use winapi::{
 //     shared::{ntdef::NULL, windef::HWND__},
 //     um::winuser::{
@@ -31,8 +31,10 @@ pub fn new_folder_window(app: &AppHandle, folder_setting: &FolderSettings) -> Re
     )?
     .build()?;
     // 强制设置窗口大小为 64.0
-    use crate::command::scale_folder;
-    scale_folder(app.to_owned(), window.label(), 64.0);
+    let _ = window.set_size(LogicalSize {
+        width: 64.0,
+        height: 64.0,
+    });
     // // 设置到最下面
     // set_window_below_desktop_icons(&window)?;
     Ok(())

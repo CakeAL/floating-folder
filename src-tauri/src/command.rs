@@ -8,16 +8,24 @@ use crate::{state::AppState, util::get_icon_base64};
 
 #[tauri::command(async)]
 pub fn moved_folder(
+    app: tauri::AppHandle,
     app_state: State<'_, AppState>,
     label: &str,
-    x: i32,
-    y: i32,
 ) -> Result<(), String> {
     if let Some(folder) = app_state.folders.write().unwrap().get_mut(label) {
         // 保存坐标到对应 label 的文件夹的 setting.json
         // dbg!(label, x, y);
-        if let Err(e) = folder.save_position(x, y) {
-            log::error!("Folder {label} cannot save position ({x},{y}): {e:?}");
+        let window = app.get_webview_window(label).unwrap();
+        let position = window
+            .outer_position()
+            .unwrap()
+            .to_logical(window.scale_factor().unwrap());
+        if let Err(e) = folder.save_position(position.x, position.y) {
+            log::error!(
+                "Folder {label} cannot save position ({},{}): {e:?}",
+                position.x,
+                position.y
+            );
         }
     }
     Ok(())
@@ -124,7 +132,8 @@ pub fn scale_folder(app: tauri::AppHandle, label: &str, len: f64) {
 
     // 获取当前窗口的位置和大小
     let scale_factor = window.scale_factor().unwrap();
-    let current_position: LogicalPosition<f64> = window.outer_position().unwrap().to_logical(scale_factor);
+    let current_position: LogicalPosition<f64> =
+        window.outer_position().unwrap().to_logical(scale_factor);
     let current_size: LogicalSize<f64> = window.inner_size().unwrap().to_logical(scale_factor);
 
     // 计算新的左上角位置，确保窗口中心不变
@@ -138,5 +147,5 @@ pub fn scale_folder(app: tauri::AppHandle, label: &str, len: f64) {
     });
 
     // 设置新的窗口位置
-    let _ = window.set_position(LogicalPosition { x: new_x, y: new_y });
+    // let _ = window.set_position(LogicalPosition { x: new_x, y: new_y });
 }
